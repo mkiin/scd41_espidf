@@ -1,0 +1,17 @@
+[
+  {
+    "label": "idf build",
+    "command": "idf.py",
+    "args": ["build"]
+  },
+  {
+    "label": "idf flash",
+    "command": "idf.py",
+    "args": ["flash"]
+  },
+  {
+    "label": "idf monitor",
+    "command": "idf.py",
+    "args": ["monitor"]
+  }
+]
