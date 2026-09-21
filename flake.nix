@@ -52,6 +52,9 @@
                 package = pkgs.clang-tools;
               };
             };
+            settings.formatter."clang-format".options = [
+              "--style=file"
+            ];
 
             settings.excludes = [
               "*.lock"
@@ -78,7 +81,6 @@
             ];
 
             packages = [
-              pkgs.clang-tools
               config.treefmt.build.wrapper
             ];
           };
