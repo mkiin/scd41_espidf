@@ -15,11 +15,11 @@ static i2c_master_bus_handle_t bus;
 static i2c_master_dev_handle_t device;
 static const char             *TAG = "scd41_i2c";
 
-void sensirion_i2c_hal_init(void)
+esp_err_t scd4x_hal_create(void)
 {
-    if ( bus != NULL )
+    if ( bus != NULL || device != NULL )
     {
-        return;
+        return ESP_ERR_INVALID_STATE;
     }
 
     const i2c_master_bus_config_t bus_config = {
@@ -30,14 +30,58 @@ void sensirion_i2c_hal_init(void)
         .glitch_ignore_cnt            = 7,
         .flags.enable_internal_pullup = false,
     };
-    ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &bus));
+    esp_err_t err = i2c_new_master_bus(&bus_config, &bus);
+    if ( err != ESP_OK )
+    {
+        return err;
+    }
 
     const i2c_device_config_t device_config = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address  = SCD41_ADDRESS,
         .scl_speed_hz    = 100000,
     };
-    ESP_ERROR_CHECK(i2c_master_bus_add_device(bus, &device_config, &device));
+    err = i2c_master_bus_add_device(bus, &device_config, &device);
+    if ( err != ESP_OK )
+    {
+        // Keep the handle if cleanup fails so destroy can be retried.
+        if ( i2c_del_master_bus(bus) == ESP_OK )
+        {
+            bus = NULL;
+        }
+        return err;
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t scd4x_hal_destroy(void)
+{
+    if ( device != NULL )
+    {
+        esp_err_t err = i2c_master_bus_rm_device(device);
+        if ( err != ESP_OK )
+        {
+            return err;
+        }
+        device = NULL;
+    }
+    if ( bus != NULL )
+    {
+        esp_err_t err = i2c_del_master_bus(bus);
+        if ( err != ESP_OK )
+        {
+            return err;
+        }
+        bus = NULL;
+    }
+
+    return ESP_OK;
+}
+
+void sensirion_i2c_hal_init(void)
+{
+    (void)scd4x_hal_create();
 }
 
 int16_t sensirion_i2c_hal_select_bus(uint8_t bus_idx)
@@ -89,14 +133,5 @@ void sensirion_i2c_hal_sleep_usec(uint32_t useconds)
 
 void sensirion_i2c_hal_free(void)
 {
-    if ( device != NULL )
-    {
-        ESP_ERROR_CHECK(i2c_master_bus_rm_device(device));
-        device = NULL;
-    }
-    if ( bus != NULL )
-    {
-        ESP_ERROR_CHECK(i2c_del_master_bus(bus));
-        bus = NULL;
-    }
+    (void)scd4x_hal_destroy();
 }
