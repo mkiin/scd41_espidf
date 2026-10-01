@@ -1,5 +1,6 @@
 #include "scd4x_driver.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "scd4x_hal_internal.h"
@@ -37,22 +38,34 @@ esp_err_t scd4x_driver_stop_periodic_measurement(void)
     return scd4x_error_to_esp(scd4x_stop_periodic_measurement());
 }
 
-esp_err_t scd4x_driver_get_data_ready(bool *ready)
+static esp_err_t scd4x_driver_get_data_ready(bool *ready)
 {
-    if ( ready == NULL )
-    {
-        return ESP_ERR_INVALID_ARG;
-    }
-
     return scd4x_error_to_esp(scd4x_get_data_ready_status(ready));
 }
 
-esp_err_t scd4x_driver_read_measurement(scd4x_measurement_t *measurement)
+static esp_err_t scd4x_driver_read_measurement(scd4x_measurement_t *measurement)
+{
+    return scd4x_error_to_esp(scd4x_read_measurement(&measurement->co2_ppm, &measurement->temperature_mdeg_c, &measurement->humidity_mpercent_rh));
+}
+
+esp_err_t scd4x_driver_try_read_measurement(scd4x_measurement_t *measurement)
 {
     if ( measurement == NULL )
     {
         return ESP_ERR_INVALID_ARG;
     }
 
-    return scd4x_error_to_esp(scd4x_read_measurement(&measurement->co2_ppm, &measurement->temperature_mdeg_c, &measurement->humidity_mpercent_rh));
+    bool      ready = false;
+    esp_err_t err   = scd4x_driver_get_data_ready(&ready);
+    if ( err != ESP_OK )
+    {
+        return err;
+    }
+
+    if ( !ready )
+    {
+        return ESP_ERR_NOT_FINISHED;
+    }
+
+    return scd4x_driver_read_measurement(measurement);
 }

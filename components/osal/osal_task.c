@@ -41,3 +41,24 @@ esp_err_t osal_task_create(osal_task_id_t id, osal_task_entry_t entry, void *arg
 
     return ESP_OK;
 }
+
+void osal_task_period_init(osal_task_period_t *period)
+{
+    period->last_wake_tick = (uint64_t)xTaskGetTickCount();
+}
+
+void osal_task_delay_until(osal_task_period_t *period, uint32_t interval_ms)
+{
+    TickType_t last_wake = (TickType_t)period->last_wake_tick;
+
+    TickType_t interval = pdMS_TO_TICKS(interval_ms);
+
+    (void)xTaskDelayUntil(&last_wake, interval);
+
+    period->last_wake_tick = (uint64_t)last_wake;
+}
+
+void osal_task_delay_ms(uint32_t delay_ms)
+{
+    vTaskDelay(pdMS_TO_TICKS(delay_ms));
+}

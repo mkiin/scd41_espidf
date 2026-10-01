@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #include "esp_err.h"
@@ -18,5 +17,6 @@ esp_err_t scd4x_driver_deinit(void);
 esp_err_t scd4x_driver_start_periodic_measurement(void);
 esp_err_t scd4x_driver_stop_periodic_measurement(void);
 
-esp_err_t scd4x_driver_get_data_ready(bool *ready);
-esp_err_t scd4x_driver_read_measurement(scd4x_measurement_t *measurement);
+// ESP_OK: measurement acquired; ESP_ERR_NOT_FINISHED: no data ready yet.
+// Other errors indicate failure. Use measurement only on ESP_OK.
+esp_err_t scd4x_driver_try_read_measurement(scd4x_measurement_t *measurement);

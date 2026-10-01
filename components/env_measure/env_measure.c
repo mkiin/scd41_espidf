@@ -5,9 +5,56 @@
 #include "env_measurement.h"
 #include "esp_log.h"
 #include "osal_queue.h"
+#include "osal_task.h"
 #include "scd4x_driver.h"
 
+#define ENV_MEASURE_POLL_INTERVAL_MS 5000U
+
 static const char *TAG = "env_measure";
+
+static bool env_measure_try_read(env_measurement_t *sample)
+{
+    scd4x_measurement_t measurement;
+
+    esp_err_t err = scd4x_driver_try_read_measurement(&measurement);
+
+    if ( err == ESP_ERR_NOT_FINISHED )
+    {
+        return false;
+    }
+
+    if ( err != ESP_OK )
+    {
+        ESP_LOGW(TAG, "read failed: %s", esp_err_to_name(err));
+        return false;
+    }
+
+    if ( measurement.co2_ppm == 0 )
+    {
+        ESP_LOGW(TAG, "Ignoring invalid CO2 sample (0 ppm)");
+        return false;
+    }
+
+    *sample = (env_measurement_t){
+        .co2_ppm              = measurement.co2_ppm,
+        .temperature_mdeg_c   = measurement.temperature_mdeg_c,
+        .humidity_mpercent_rh = measurement.humidity_mpercent_rh,
+    };
+    return true;
+}
+
+static void env_measure_publish(const env_measurement_t *sample)
+{
+    esp_err_t err = osal_queue_send(OSAL_QUEUE_ENV_MEASUREMENT, sample, 0);
+
+    if ( err != ESP_OK )
+    {
+        ESP_LOGW(TAG, "sample not queued: %s", esp_err_to_name(err));
+
+        return;
+    }
+    ESP_LOGI(TAG, "CO2=%u ppm, T=%.2f C, RH=%.2f %%", (unsigned)sample->co2_ppm, sample->temperature_mdeg_c / 1000.0, sample->humidity_mpercent_rh / 1000.0);
+}
 
 esp_err_t env_measure_init(void)
 {
@@ -38,45 +85,18 @@ void env_measure_run(void *arg)
 {
     (void)arg;
 
+    osal_task_period_t period;
+    osal_task_period_init(&period);
+
     for ( ;; )
     {
-        bool      ready = false;
-        esp_err_t err   = scd4x_driver_get_data_ready(&ready);
-        if ( err != ESP_OK )
-        {
-            ESP_LOGW(TAG, "status failed: %s", esp_err_to_name(err));
-            continue;
-        }
-        if ( !ready )
-        {
-            continue;
-        }
+        osal_task_delay_until(&period, ENV_MEASURE_POLL_INTERVAL_MS);
+        env_measurement_t sample;
 
-        scd4x_measurement_t measurement;
-        err = scd4x_driver_read_measurement(&measurement);
-        if ( err != ESP_OK )
+        if ( !env_measure_try_read(&sample) )
         {
-            ESP_LOGW(TAG, "read failed: %s", esp_err_to_name(err));
             continue;
         }
-        if ( measurement.co2_ppm == 0 )
-        {
-            ESP_LOGW(TAG, "Ignoring invalid CO2 sample (0 ppm)");
-            continue;
-        }
-
-        env_measurement_t sample = {
-            .co2_ppm              = measurement.co2_ppm,
-            .temperature_mdeg_c   = measurement.temperature_mdeg_c,
-            .humidity_mpercent_rh = measurement.humidity_mpercent_rh,
-        };
-        // Keep acquiring samples even when no telemetry consumer is running.
-        err = osal_queue_send(OSAL_QUEUE_ENV_MEASUREMENT, &sample, 0);
-        if ( err != ESP_OK )
-        {
-            ESP_LOGW(TAG, "Sample not queued: %s", esp_err_to_name(err));
-        }
-
-        ESP_LOGI(TAG, "CO2=%u ppm, T=%.2f C, RH=%.2f %%", (unsigned)sample.co2_ppm, sample.temperature_mdeg_c / 1000.0, sample.humidity_mpercent_rh / 1000.0);
+        env_measure_publish(&sample);
     }
 }
