@@ -6,6 +6,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "scd4x_hal_internal.h"
 #include "sensirion_i2c_hal.h"
 
 #define SCD41_ADDRESS  0x62

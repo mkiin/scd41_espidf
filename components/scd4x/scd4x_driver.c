@@ -2,11 +2,8 @@
 
 #include <stddef.h>
 
+#include "scd4x_hal_internal.h"
 #include "scd4x_i2c.h"
-
-// Internal HAL entry points; deliberately absent from the public header.
-esp_err_t scd4x_hal_create(void);
-esp_err_t scd4x_hal_destroy(void);
 
 static esp_err_t scd4x_error_to_esp(int16_t error)
 {
@@ -25,7 +22,7 @@ esp_err_t scd4x_driver_init(void)
     return ESP_OK;
 }
 
-esp_err_t scdgx_driver_deinit(void)
+esp_err_t scd4x_driver_deinit(void)
 {
     return scd4x_hal_destroy();
 }
