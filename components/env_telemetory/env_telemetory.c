@@ -12,7 +12,6 @@
 #include "sdkconfig.h"
 #include "wifi_service.h"
 
-#define URL                           "http://192.168.100.86:8000/api/data"
 #define ENV_TELEMETRY_WAIT_MS         1000U
 #define ENV_TELEMETRY_HTTP_TIMEOUT_MS 5000
 
@@ -54,8 +53,8 @@ static void env_telemetory_send(const env_measurement_t *sample)
     else
     {
         ESP_LOGE(TAG, "HTTP POST 失敗: %s", esp_err_to_name(err));
-        esp_http_client_close(s_client);
     }
+    esp_http_client_cleanup(s_client);
     cJSON_free(payload);
 }
 
@@ -64,13 +63,14 @@ esp_err_t env_telemetory_init(void)
     // const char *url = CONFIG_ENV_TELEMETRY_HTTP_URL;
 
     const esp_http_client_config_t config = {
-        .url                   = URL,
+        .url                   = CONFIG_APP_TELEMETRY_URL,
         .method                = HTTP_METHOD_POST,
         .timeout_ms            = ENV_TELEMETRY_HTTP_TIMEOUT_MS,
         .disable_auto_redirect = true,
     };
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
+
     esp_http_client_set_header(client, "Content-Type", "application/json");
 
     s_client = client;
