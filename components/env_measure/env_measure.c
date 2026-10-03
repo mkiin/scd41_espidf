@@ -45,7 +45,7 @@ static bool env_measure_try_read(env_measurement_t *sample)
 
 static void env_measure_publish(const env_measurement_t *sample)
 {
-    esp_err_t err = osal_queue_send(OSAL_QUEUE_ENV_MEASUREMENT, sample, 0);
+    esp_err_t err = osal_queue_overwrite(OSAL_QUEUE_ENV_MEASUREMENT, sample);
 
     if ( err != ESP_OK )
     {

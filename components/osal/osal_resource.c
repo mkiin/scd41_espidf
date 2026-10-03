@@ -23,14 +23,14 @@ osal_task_resource_t osal_task_resources[OSAL_TASK_COUNT] = {
 osal_queue_resource_t osal_queue_resources[OSAL_QUEUE_COUNT] = {
     [OSAL_QUEUE_ENV_MEASUREMENT] = {
         .id = OSAL_QUEUE_ENV_MEASUREMENT,
-        .length = 8,
+        .length = 1,
         .item_size = sizeof(env_measurement_t),
         .handle = NULL,
     },
 };
 
 osal_event_resource_t
-    g_osal_event_resources[OSAL_EVENT_COUNT] = {
+    osal_event_resources[OSAL_EVENT_COUNT] = {
         [OSAL_EVENT_NETWORK] = {
             .handle = NULL,
         },

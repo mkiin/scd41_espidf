@@ -1,6 +1,5 @@
 #include "osal_event.h"
 
-#include "freertos/projdefs.h"
 #include "osal_resource_internal.h"
 
 /* ESP-IDF v5.5.2 / ESP32-S3用。上位8ビットは使用しない。 */

@@ -2,7 +2,6 @@
 
 #include <stddef.h>
 
-#include "freertos/projdefs.h"
 #include "osal_resource_internal.h"
 
 static osal_queue_resource_t *osal_queue_get_by(osal_queue_id_t id)
@@ -70,6 +69,22 @@ esp_err_t osal_queue_send(osal_queue_id_t id, const void *item, uint32_t timeout
     }
 
     return ESP_OK;
+}
+
+esp_err_t osal_queue_overwrite(osal_queue_id_t id, const void *item)
+{
+    osal_queue_resource_t *resource = osal_queue_get_by(id);
+    if ( resource == NULL || item == NULL || resource->length != 1 )
+    {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if ( resource->handle == NULL )
+    {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    return xQueueOverwrite(resource->handle, item) == pdPASS ? ESP_OK : ESP_FAIL;
 }
 
 esp_err_t osal_queue_receive(osal_queue_id_t id, void *item, uint32_t timeout_ms)
