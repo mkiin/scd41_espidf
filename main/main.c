@@ -1,6 +1,7 @@
 #include "env_measure.h"
 #include "esp_err.h"
 #include "nvs_flash.h"
+#include "power_management.h"
 #include "taskmng.h"
 #include "wifi_service.h"
 
@@ -13,6 +14,7 @@ void app_main(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+    ESP_ERROR_CHECK(power_management_init());
 
     QueueHandle_t measurement_queue = xQueueCreate(1, sizeof(env_measurement_t));
     ESP_ERROR_CHECK(measurement_queue != NULL ? ESP_OK : ESP_ERR_NO_MEM);
