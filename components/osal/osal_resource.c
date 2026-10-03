@@ -9,6 +9,13 @@ osal_task_resource_t osal_task_resources[OSAL_TASK_COUNT] = {
         .priority = 5,
         .handle = NULL,
     },
+    [OSAL_TASK_ENV_TELEMETRY] = {
+        .id = OSAL_TASK_ENV_TELEMETRY,
+        .name = "env_telemetory",
+        .stack_size_bytes = 4096,
+        .priority = 5,
+        .handle = NULL,
+    },
 };
 
 osal_queue_resource_t osal_queue_resources[OSAL_QUEUE_COUNT] = {

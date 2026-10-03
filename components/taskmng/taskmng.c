@@ -3,6 +3,7 @@
 #include <stddef.h>
 
 #include "env_measure.h"
+#include "env_telemetory.h"
 #include "osal_resource.h"
 #include "osal_task.h"
 
@@ -23,6 +24,12 @@ static const taskmng_entry_t s_task_entries[] = {
      .run  = env_measure_run,
      .arg  = NULL,
      },
+    {
+     .id   = OSAL_TASK_ENV_TELEMETRY,
+     .init = env_telemetory_init,
+     .run  = env_telemetory_run,
+     .arg  = NULL,
+     }
 };
 
 esp_err_t taskmng_init_all(void)

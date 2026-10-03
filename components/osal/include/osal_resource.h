@@ -3,6 +3,7 @@
 typedef enum
 {
     OSAL_TASK_ENV_MEASURE = 0,
+    OSAL_TASK_ENV_TELEMETRY,
 
     OSAL_TASK_COUNT
 } osal_task_id_t;
