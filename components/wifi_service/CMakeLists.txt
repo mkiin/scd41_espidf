@@ -4,10 +4,10 @@ idf_component_register(
     INCLUDE_DIRS
         "include"
     REQUIRES
+        freertos
         esp_common
     PRIV_REQUIRES
         esp_wifi
         esp_netif
         esp_event
-        osal
 )

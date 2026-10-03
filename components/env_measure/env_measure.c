@@ -2,10 +2,8 @@
 
 #include <stdbool.h>
 
-#include "env_measurement.h"
 #include "esp_log.h"
-#include "osal_queue.h"
-#include "osal_task.h"
+#include "freertos/task.h"
 #include "scd4x_driver.h"
 
 #define ENV_MEASURE_POLL_INTERVAL_MS 5000U
@@ -36,24 +34,21 @@ static bool env_measure_try_read(env_measurement_t *sample)
     }
 
     *sample = (env_measurement_t){
-        .co2_ppm              = measurement.co2_ppm,
-        .temperature_mdeg_c   = measurement.temperature_mdeg_c,
-        .humidity_mpercent_rh = measurement.humidity_mpercent_rh,
+        .co2_ppm     = measurement.co2_ppm,
+        .temperature = measurement.temperature_mdeg_c,
+        .humidity    = measurement.humidity_mpercent_rh,
     };
     return true;
 }
 
-static void env_measure_publish(const env_measurement_t *sample)
+static void env_measure_publish(QueueHandle_t measurement_queue, const env_measurement_t *sample)
 {
-    esp_err_t err = osal_queue_overwrite(OSAL_QUEUE_ENV_MEASUREMENT, sample);
-
-    if ( err != ESP_OK )
+    if ( xQueueOverwrite(measurement_queue, sample) != pdPASS )
     {
-        ESP_LOGW(TAG, "sample not queued: %s", esp_err_to_name(err));
-
+        ESP_LOGW(TAG, "sample not queued");
         return;
     }
-    ESP_LOGI(TAG, "CO2=%u ppm, T=%.2f C, RH=%.2f %%", (unsigned)sample->co2_ppm, sample->temperature_mdeg_c / 1000.0, sample->humidity_mpercent_rh / 1000.0);
+    ESP_LOGI(TAG, "CO2=%u ppm, T=%.2f C, RH=%.2f %%", (unsigned)sample->co2_ppm, sample->temperature / 1000.0, sample->humidity / 1000.0);
 }
 
 esp_err_t env_measure_init(void)
@@ -83,20 +78,19 @@ esp_err_t env_measure_init(void)
 
 void env_measure_run(void *arg)
 {
-    (void)arg;
+    env_measure_args_t *args = (env_measure_args_t *)arg;
 
-    osal_task_period_t period;
-    osal_task_period_init(&period);
+    TickType_t last_wake_tick = xTaskGetTickCount();
 
     for ( ;; )
     {
-        osal_task_delay_until(&period, ENV_MEASURE_POLL_INTERVAL_MS);
+        xTaskDelayUntil(&last_wake_tick, pdMS_TO_TICKS(ENV_MEASURE_POLL_INTERVAL_MS));
         env_measurement_t sample;
 
         if ( !env_measure_try_read(&sample) )
         {
             continue;
         }
-        env_measure_publish(&sample);
+        env_measure_publish(args->measurement_queue, &sample);
     }
 }

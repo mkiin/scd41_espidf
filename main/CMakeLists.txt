@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "main.c" "app_platform.c"
+    SRCS "main.c"
     INCLUDE_DIRS "."
-    PRIV_REQUIRES osal taskmng nvs_flash wifi_service
+    PRIV_REQUIRES taskmng env_measure nvs_flash wifi_service
 )

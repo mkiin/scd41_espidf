@@ -3,12 +3,10 @@
 #include <string.h>
 
 #include "cJSON.h"
-#include "env_measurement.h"
+#include "env_measure.h"
 #include "esp_err.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
-#include "osal_event.h"
-#include "osal_queue.h"
 #include "sdkconfig.h"
 #include "wifi_service.h"
 
@@ -26,9 +24,8 @@ static char *env_telemetory_create_payload(const env_measurement_t *sample)
         return NULL;
     }
 
-    if ( cJSON_AddNumberToObject(json, "co2_ppm", sample->co2_ppm) == NULL ||
-         cJSON_AddNumberToObject(json, "temperature", sample->temperature_mdeg_c) == NULL ||
-         cJSON_AddNumberToObject(json, "humidity", sample->humidity_mpercent_rh) == NULL )
+    if ( cJSON_AddNumberToObject(json, "co2_ppm", sample->co2_ppm) == NULL || cJSON_AddNumberToObject(json, "temperature", sample->temperature) == NULL ||
+         cJSON_AddNumberToObject(json, "humidity", sample->humidity) == NULL )
     {
         cJSON_Delete(json);
         return NULL;
@@ -83,20 +80,20 @@ esp_err_t env_telemetory_init(void)
     return ESP_OK;
 }
 
-void env_telemetory_run(void *args)
+void env_telemetory_run(void *arg)
 {
-    (void)args;
+    env_telemetory_args_t *args = (env_telemetory_args_t *)arg;
+
     for ( ;; )
     {
-        esp_err_t err = osal_event_wait_all(OSAL_EVENT_NETWORK, WIFI_SERVICE_IPV4_READY, ENV_TELEMETRY_WAIT_MS);
-        if ( err == ESP_ERR_TIMEOUT )
+        EventBits_t observed = xEventGroupWaitBits(args->network_event_group, WIFI_SERVICE_IPV4_READY, pdFALSE, pdTRUE, pdMS_TO_TICKS(ENV_TELEMETRY_WAIT_MS));
+        if ( (observed & WIFI_SERVICE_IPV4_READY) == 0 )
         {
             continue;
         }
 
         env_measurement_t sample;
-        err = osal_queue_receive(OSAL_QUEUE_ENV_MEASUREMENT, &sample, ENV_TELEMETRY_WAIT_MS);
-        if ( err == ESP_ERR_TIMEOUT )
+        if ( xQueueReceive(args->measurement_queue, &sample, pdMS_TO_TICKS(ENV_TELEMETRY_WAIT_MS)) != pdPASS )
         {
             continue;
         }
