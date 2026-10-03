@@ -9,9 +9,6 @@
 #include "osal_event.h"
 #include "sdkconfig.h"
 
-// #define SSID     "Wi-Fi-302"
-// #define PASSWORD "33223344"
-
 static const char *TAG = "wifi_service";
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)

@@ -53,15 +53,13 @@ static void env_telemetory_send(const env_measurement_t *sample)
     else
     {
         ESP_LOGE(TAG, "HTTP POST 失敗: %s", esp_err_to_name(err));
+        esp_http_client_close(s_client);
     }
-    esp_http_client_cleanup(s_client);
     cJSON_free(payload);
 }
 
 esp_err_t env_telemetory_init(void)
 {
-    // const char *url = CONFIG_ENV_TELEMETRY_HTTP_URL;
-
     const esp_http_client_config_t config = {
         .url                   = CONFIG_APP_TELEMETRY_URL,
         .method                = HTTP_METHOD_POST,
@@ -69,11 +67,19 @@ esp_err_t env_telemetory_init(void)
         .disable_auto_redirect = true,
     };
 
-    esp_http_client_handle_t client = esp_http_client_init(&config);
+    s_client = esp_http_client_init(&config);
+    if ( s_client == NULL )
+    {
+        return ESP_ERR_NO_MEM;
+    }
 
-    esp_http_client_set_header(client, "Content-Type", "application/json");
-
-    s_client = client;
+    esp_err_t err = esp_http_client_set_header(s_client, "Content-Type", "application/json");
+    if ( err != ESP_OK )
+    {
+        esp_http_client_cleanup(s_client);
+        s_client = NULL;
+        return err;
+    }
     return ESP_OK;
 }
 
