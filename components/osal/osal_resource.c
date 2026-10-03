@@ -1,3 +1,5 @@
+#include "osal_resource.h"
+
 #include "env_measurement.h"
 #include "osal_resource_internal.h"
 
@@ -26,3 +28,10 @@ osal_queue_resource_t osal_queue_resources[OSAL_QUEUE_COUNT] = {
         .handle = NULL,
     },
 };
+
+osal_event_resource_t
+    g_osal_event_resources[OSAL_EVENT_COUNT] = {
+        [OSAL_EVENT_NETWORK] = {
+            .handle = NULL,
+        },
+    };

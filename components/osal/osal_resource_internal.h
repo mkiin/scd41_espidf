@@ -3,9 +3,11 @@
 #include <stdint.h>
 
 #include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "osal_resource.h"
+#include "osal_types.h"
 
 typedef struct
 {
@@ -24,5 +26,11 @@ typedef struct
     QueueHandle_t   handle;
 } osal_queue_resource_t;
 
+typedef struct
+{
+    EventGroupHandle_t handle;
+} osal_event_resource_t;
+
 extern osal_task_resource_t  osal_task_resources[ OSAL_TASK_COUNT ];
 extern osal_queue_resource_t osal_queue_resources[ OSAL_QUEUE_COUNT ];
+extern osal_event_resource_t osal_event_resources[ OSAL_EVENT_COUNT ];

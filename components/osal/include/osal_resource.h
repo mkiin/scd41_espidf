@@ -14,3 +14,9 @@ typedef enum
 
     OSAL_QUEUE_COUNT
 } osal_queue_id_t;
+
+typedef enum
+{
+    OSAL_EVENT_NETWORK = 0,
+    OSAL_EVENT_COUNT
+} osal_event_id_t;

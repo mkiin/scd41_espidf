@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 
+#include "freertos/projdefs.h"
 #include "osal_resource_internal.h"
 
 static osal_queue_resource_t *osal_queue_get_by(osal_queue_id_t id)
@@ -12,24 +13,6 @@ static osal_queue_resource_t *osal_queue_get_by(osal_queue_id_t id)
     }
 
     return &osal_queue_resources[ id ];
-}
-
-static TickType_t osal_queue_timeout_ticks(uint32_t timeout_ms)
-{
-    if ( timeout_ms == OSAL_WAIT_FOREVER )
-    {
-        return portMAX_DELAY;
-    }
-
-    // Round positive timeouts up, using 64 bits to avoid overflow.
-    uint64_t ticks = ((uint64_t)timeout_ms * configTICK_RATE_HZ + 999ULL) / 1000ULL;
-    // Reserve portMAX_DELAY for an explicitly indefinite wait.
-    if ( ticks >= portMAX_DELAY )
-    {
-        return portMAX_DELAY - 1;
-    }
-
-    return (TickType_t)ticks;
 }
 
 esp_err_t osal_queue_create(osal_queue_id_t id)
@@ -81,7 +64,7 @@ esp_err_t osal_queue_send(osal_queue_id_t id, const void *item, uint32_t timeout
         return ESP_ERR_INVALID_STATE;
     }
 
-    if ( xQueueSend(resource->handle, item, osal_queue_timeout_ticks(timeout_ms)) != pdPASS )
+    if ( xQueueSend(resource->handle, item, pdMS_TO_TICKS(timeout_ms)) != pdPASS )
     {
         return ESP_ERR_TIMEOUT;
     }
@@ -102,7 +85,7 @@ esp_err_t osal_queue_receive(osal_queue_id_t id, void *item, uint32_t timeout_ms
         return ESP_ERR_INVALID_STATE;
     }
 
-    if ( xQueueReceive(resource->handle, item, osal_queue_timeout_ticks(timeout_ms)) != pdPASS )
+    if ( xQueueReceive(resource->handle, item, pdMS_TO_TICKS(timeout_ms)) != pdPASS )
     {
         return ESP_ERR_TIMEOUT;
     }
