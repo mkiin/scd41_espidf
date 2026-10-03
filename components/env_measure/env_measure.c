@@ -12,9 +12,7 @@ static const char *TAG = "env_measure";
 
 static bool env_measure_try_read(env_measurement_t *sample)
 {
-    scd4x_measurement_t measurement;
-
-    esp_err_t err = scd4x_driver_try_read_measurement(&measurement);
+    esp_err_t err = scd4x_driver_try_read_measurement(&sample->co2_ppm, &sample->temperature, &sample->humidity);
 
     if ( err == ESP_ERR_NOT_FINISHED )
     {
@@ -27,17 +25,12 @@ static bool env_measure_try_read(env_measurement_t *sample)
         return false;
     }
 
-    if ( measurement.co2_ppm == 0 )
+    if ( sample->co2_ppm == 0 )
     {
         ESP_LOGW(TAG, "Ignoring invalid CO2 sample (0 ppm)");
         return false;
     }
 
-    *sample = (env_measurement_t){
-        .co2_ppm     = measurement.co2_ppm,
-        .temperature = measurement.temperature_mdeg_c,
-        .humidity    = measurement.humidity_mpercent_rh,
-    };
     return true;
 }
 

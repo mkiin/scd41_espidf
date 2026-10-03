@@ -43,14 +43,9 @@ static esp_err_t scd4x_driver_get_data_ready(bool *ready)
     return scd4x_error_to_esp(scd4x_get_data_ready_status(ready));
 }
 
-static esp_err_t scd4x_driver_read_measurement(scd4x_measurement_t *measurement)
+esp_err_t scd4x_driver_try_read_measurement(uint16_t *co2_ppm, int32_t *temperature, int32_t *humidity)
 {
-    return scd4x_error_to_esp(scd4x_read_measurement(&measurement->co2_ppm, &measurement->temperature_mdeg_c, &measurement->humidity_mpercent_rh));
-}
-
-esp_err_t scd4x_driver_try_read_measurement(scd4x_measurement_t *measurement)
-{
-    if ( measurement == NULL )
+    if ( co2_ppm == NULL || temperature == NULL || humidity == NULL )
     {
         return ESP_ERR_INVALID_ARG;
     }
@@ -67,5 +62,5 @@ esp_err_t scd4x_driver_try_read_measurement(scd4x_measurement_t *measurement)
         return ESP_ERR_NOT_FINISHED;
     }
 
-    return scd4x_driver_read_measurement(measurement);
+    return scd4x_error_to_esp(scd4x_read_measurement(co2_ppm, temperature, humidity));
 }

@@ -9,8 +9,8 @@
 typedef struct
 {
     uint16_t co2_ppm;
-    int32_t  temperature;
-    int32_t  humidity;
+    int32_t  temperature;  // Millidegrees Celsius.
+    int32_t  humidity;     // Thousandths of percent relative humidity.
 } env_measurement_t;
 
 typedef struct
