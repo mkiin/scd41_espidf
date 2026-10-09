@@ -1,0 +1,13 @@
+#pragma once
+
+#include "sdkconfig.h"
+
+#if defined(CONFIG_APP_API_ENVIRONMENT_DEVELOPMENT)
+#define APP_TELEMETRY_URL                  CONFIG_APP_DEV_TELEMETRY_URL
+#define APP_TELEMETRY_AUTHORIZATION_HEADER "Bearer " CONFIG_APP_DEV_AIRMONITOR_API_TOKEN
+#elif defined(CONFIG_APP_API_ENVIRONMENT_PRODUCTION)
+#define APP_TELEMETRY_URL                  CONFIG_APP_TELEMETRY_URL
+#define APP_TELEMETRY_AUTHORIZATION_HEADER "Bearer " CONFIG_APP_AIRMONITOR_API_TOKEN
+#else
+#error "API environment is not configured"
+#endif
