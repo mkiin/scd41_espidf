@@ -1,12 +1,16 @@
-#include "env_measure.h"
 #include "esp_err.h"
+#include "esp_log.h"
 #include "nvs_flash.h"
 #include "power_management.h"
+#include "sdkconfig.h"
 #include "taskmng.h"
-#include "wifi_service.h"
 
 void app_main(void)
 {
+#if CONFIG_APP_API_ENVIRONMENT_PRODUCTION
+    esp_log_level_set("*", ESP_LOG_NONE);
+#endif
+
     esp_err_t ret = nvs_flash_init();
     if ( ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND )
     {
@@ -16,15 +20,6 @@ void app_main(void)
     ESP_ERROR_CHECK(ret);
     ESP_ERROR_CHECK(power_management_init());
 
-    QueueHandle_t measurement_queue = xQueueCreate(1, sizeof(env_measurement_t));
-    ESP_ERROR_CHECK(measurement_queue != NULL ? ESP_OK : ESP_ERR_NO_MEM);
-
-    EventGroupHandle_t network_event_group = xEventGroupCreate();
-    ESP_ERROR_CHECK(network_event_group != NULL ? ESP_OK : ESP_ERR_NO_MEM);
-
-    ESP_ERROR_CHECK(taskmng_init_all(measurement_queue, network_event_group));
-
-    ESP_ERROR_CHECK(wifi_service_init(network_event_group));
-
+    ESP_ERROR_CHECK(taskmng_init_all());
     ESP_ERROR_CHECK(taskmng_create_all());
 }

@@ -18,8 +18,31 @@ menu "Application settings"
         string "Wi-Fi password"
         default ""
 
+    choice APP_API_ENVIRONMENT
+        prompt "API environment"
+        default APP_API_ENVIRONMENT_PRODUCTION
+
+        config APP_API_ENVIRONMENT_DEVELOPMENT
+            bool "Development"
+
+        config APP_API_ENVIRONMENT_PRODUCTION
+            bool "Production"
+    endchoice
+
+    config APP_DEV_TELEMETRY_URL
+        string "Development telemetry URL"
+        default ""
+
+    config APP_DEV_AIRMONITOR_API_TOKEN
+        string "Development AIRMONITOR_API_TOKEN"
+        default ""
+
     config APP_TELEMETRY_URL
-        string "Telemetry URL"
+        string "Production telemetry URL"
+        default "https://airmonitor-web.mkiin.workers.dev/api/readings"
+
+    config APP_AIRMONITOR_API_TOKEN
+        string "Production AIRMONITOR_API_TOKEN"
         default ""
 
 endmenu

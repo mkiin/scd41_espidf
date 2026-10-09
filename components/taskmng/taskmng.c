@@ -4,8 +4,10 @@
 
 #include "env_measure.h"
 #include "env_telemetory.h"
+#include "freertos/event_groups.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
+#include "wifi_service.h"
 
 typedef struct
 {
@@ -20,6 +22,8 @@ typedef struct
 
 static env_measure_args_t    s_env_measure_args;
 static env_telemetory_args_t s_env_telemetory_args;
+static QueueHandle_t         s_measurement_queue;
+static EventGroupHandle_t    s_network_event_group;
 
 static taskmng_entry_t s_task_entries[] = {
     {
@@ -42,17 +46,31 @@ static taskmng_entry_t s_task_entries[] = {
      }
 };
 
-esp_err_t taskmng_init_all(QueueHandle_t measurement_queue, EventGroupHandle_t network_event_group)
+esp_err_t taskmng_init_all(void)
 {
-    if ( measurement_queue == NULL || network_event_group == NULL )
+    if ( s_measurement_queue != NULL || s_network_event_group != NULL )
     {
-        return ESP_ERR_INVALID_ARG;
+        return ESP_ERR_INVALID_STATE;
     }
 
-    s_env_measure_args.measurement_queue = measurement_queue;
+    s_measurement_queue = xQueueCreate(1, sizeof(env_measurement_t));
+    if ( s_measurement_queue == NULL )
+    {
+        return ESP_ERR_NO_MEM;
+    }
 
-    s_env_telemetory_args.measurement_queue   = measurement_queue;
-    s_env_telemetory_args.network_event_group = network_event_group;
+    s_network_event_group = xEventGroupCreate();
+    if ( s_network_event_group == NULL )
+    {
+        vQueueDelete(s_measurement_queue);
+        s_measurement_queue = NULL;
+        return ESP_ERR_NO_MEM;
+    }
+
+    s_env_measure_args.measurement_queue = s_measurement_queue;
+
+    s_env_telemetory_args.measurement_queue   = s_measurement_queue;
+    s_env_telemetory_args.network_event_group = s_network_event_group;
 
     for ( size_t i = 0; i < sizeof(s_task_entries) / sizeof(s_task_entries[ 0 ]); ++i )
     {
@@ -68,7 +86,7 @@ esp_err_t taskmng_init_all(QueueHandle_t measurement_queue, EventGroupHandle_t n
         }
     }
 
-    return ESP_OK;
+    return wifi_service_init(s_network_event_group);
 }
 
 esp_err_t taskmng_create_all(void)
