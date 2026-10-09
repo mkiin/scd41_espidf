@@ -5,6 +5,7 @@
 
 #include "cJSON.h"
 #include "env_measure.h"
+#include "esp_crt_bundle.h"
 #include "esp_err.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
@@ -14,6 +15,16 @@
 
 #define ENV_TELEMETRY_WAIT_MS         (CONFIG_APP_NETWORK_WAIT_SECONDS * 1000U)
 #define ENV_TELEMETRY_HTTP_TIMEOUT_MS 5000
+
+#if defined(CONFIG_APP_API_ENVIRONMENT_DEVELOPMENT)
+#define ENV_TELEMETRY_URL       CONFIG_APP_DEV_TELEMETRY_URL
+#define ENV_TELEMETRY_API_TOKEN CONFIG_APP_DEV_AIRMONITOR_API_TOKEN
+#elif defined(CONFIG_APP_API_ENVIRONMENT_PRODUCTION)
+#define ENV_TELEMETRY_URL       CONFIG_APP_TELEMETRY_URL
+#define ENV_TELEMETRY_API_TOKEN CONFIG_APP_AIRMONITOR_API_TOKEN
+#else
+#error "API environment is not configured"
+#endif
 
 static const char              *TAG = "env_telemetory";
 static esp_http_client_handle_t s_client;
@@ -63,17 +74,17 @@ static void env_telemetory_send(const env_measurement_t *sample)
         ESP_LOGE(TAG, "HTTP POST 失敗: %s", esp_err_to_name(err));
     }
     esp_http_client_close(s_client);
-    esp_http_client_set_post_field(s_client, NULL, 0);
     cJSON_free(payload);
 }
 
 esp_err_t env_telemetory_init(void)
 {
     const esp_http_client_config_t config = {
-        .url                   = CONFIG_APP_TELEMETRY_URL,
+        .url                   = ENV_TELEMETRY_URL,
         .method                = HTTP_METHOD_POST,
         .timeout_ms            = ENV_TELEMETRY_HTTP_TIMEOUT_MS,
         .disable_auto_redirect = true,
+        .crt_bundle_attach     = esp_crt_bundle_attach,
     };
 
     s_client = esp_http_client_init(&config);
@@ -83,6 +94,13 @@ esp_err_t env_telemetory_init(void)
     }
 
     esp_err_t err = esp_http_client_set_header(s_client, "Content-Type", "application/json");
+    if ( err != ESP_OK )
+    {
+        esp_http_client_cleanup(s_client);
+        s_client = NULL;
+        return err;
+    }
+    err = esp_http_client_set_header(s_client, "Authorization", "Bearer " ENV_TELEMETRY_API_TOKEN);
     if ( err != ESP_OK )
     {
         esp_http_client_cleanup(s_client);
